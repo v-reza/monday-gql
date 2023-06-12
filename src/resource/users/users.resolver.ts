@@ -4,7 +4,7 @@ import { User } from './entities/user.entity';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import GraphQLJSON from 'graphql-type-json';
-import { FilterParameters } from 'src/graphql/filters.graphql';
+import { FilterParameters } from '../../graphql/filters.graphql';
 
 @Resolver(() => User)
 export class UsersResolver {

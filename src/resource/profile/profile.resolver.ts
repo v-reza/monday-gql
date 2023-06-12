@@ -3,7 +3,7 @@ import { ProfileService } from './profile.service';
 import { CreateProfileInput } from './dto/create-profile.input';
 import { UpdateProfileInput } from './dto/update-profile.input';
 import { Profile } from './entities/profile.entity';
-import { FilterParameters } from 'src/graphql/filters.graphql';
+import { FilterParameters } from '../../graphql/filters.graphql';
 
 @Resolver(() => Profile)
 export class ProfileResolver {
