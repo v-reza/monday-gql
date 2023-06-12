@@ -2,9 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { Model, ModelCtor } from 'sequelize-typescript';
 import { Op } from 'sequelize';
 import * as _ from 'lodash';
+import * as moment from 'moment';
+import { SERVER_DATE_TIME_FORMAT } from './utils/constants';
 
 
-const convertLikePattern = (pattern: any, mappedQuery: Map<string, string>) => {
+const convertLikePattern = (pattern: string, mappedQuery: Map<string, string>) => {
   let mappedObject = {}
   const likeQuery = mappedQuery.get(pattern);
   mappedObject = {
@@ -23,12 +25,39 @@ const convertLikePattern = (pattern: any, mappedQuery: Map<string, string>) => {
   return mergedObject
 }
 
+const convertGteLtePattern = (pattern: string, mappedQuery: Map<string, string>) => {
+  let mappedObject = {}
+  const query = mappedQuery.get(pattern)
+  mappedObject = {
+    ...mappedObject,
+    ...(_.map(query, (value, key) => {
+      const validate = moment(value, 'YYYY-MM-DDTHH:mm:ss', true).isValid()
+      if (!validate) throw new Error('Invalid date format')
+
+      if (pattern === 'gte') {
+        return {
+          [key]: {
+            [Op.gte]: moment(value).format(SERVER_DATE_TIME_FORMAT)
+          }
+        }
+      } else if (pattern === 'lte') {
+        return {
+          [key]: {
+            [Op.lte]: moment(value).format(SERVER_DATE_TIME_FORMAT)
+          }
+        }
+      }
+    }))
+  }
+
+  const mergedObject = Object.assign({}, ...Object.values(mappedObject))
+  return mergedObject
+}
+
 @Injectable()
 export class BaseService<T extends Model> {
   protected readonly repository: ModelCtor<T>;
 
-  private readonly PATTERN_SKIP = 'skip';
-  private readonly PATTERN_LIMIT = 'limit';
   private readonly PATTERN_EQUALS = 'eq';
   private readonly PATTERN_NOT_EQUALS = 'neq';
   private readonly PATTERN_GREATER_THAN = 'gte';
@@ -40,8 +69,58 @@ export class BaseService<T extends Model> {
   }
 
   async findAll(requestParams: FilterParameter): Promise<T[]> {
-    const { limit, skip, query } = requestParams;
+    const { limit, skip, query = {} } = requestParams;
     const mappedQuery: Map<string, string> = new Map(Object.entries(query));
+    let mappedWhere = {}
+
+    if (mappedQuery.get(this.PATTERN_EQUALS)) {
+      mappedWhere = { 
+        ...mappedWhere,
+        ...({
+          [Op.and]: _.map(mappedQuery.get(this.PATTERN_EQUALS), (value, key) => {
+            return {
+              [key]: value
+            }
+          })
+        })
+      }
+    }
+
+    if (mappedQuery.get(this.PATTERN_NOT_EQUALS)) {
+      mappedWhere = {
+        ...mappedWhere,
+        ...({
+          [Op.not]: _.map(mappedQuery.get(this.PATTERN_NOT_EQUALS), (value, key) => {
+            return {
+              [key]: value
+            }
+          })
+        })
+      }
+    }
+
+    if (mappedQuery.get(this.PATTERN_LIKE)) {
+      mappedWhere = {
+        ...mappedWhere,
+        ...convertLikePattern(this.PATTERN_LIKE, mappedQuery)
+      }
+    }
+
+    if (mappedQuery.get(this.PATTERN_GREATER_THAN)) {
+      mappedWhere = {
+        ...mappedWhere,
+        ...convertGteLtePattern(this.PATTERN_GREATER_THAN, mappedQuery)
+      }
+    }
+
+    if (mappedQuery.get(this.PATTERN_LESS_THAN)) {
+      mappedWhere = {
+        ...mappedWhere,
+        ...convertGteLtePattern(this.PATTERN_LESS_THAN, mappedQuery)
+      }
+    }
+
+
 
     return this.repository.findAll({
       limit: limit ?? 10,
@@ -49,41 +128,8 @@ export class BaseService<T extends Model> {
       ...(query
         ? {
             where: {
-              // Equals Method
-              ...(mappedQuery.get(this.PATTERN_EQUALS)
-                ? {
-                    [Op.and]: _.map(
-                      mappedQuery.get(this.PATTERN_EQUALS),
-                      (value, key) => {
-                        return {
-                          [key]: value,
-                        };
-                      },
-                    ),
-                  }
-                : {
-                    // Not Equals Method
-                    ...(mappedQuery.get(this.PATTERN_NOT_EQUALS)
-                      ? {
-                          [Op.not]: _.map(
-                            mappedQuery.get(this.PATTERN_NOT_EQUALS),
-                            (value, key) => {
-                              return {
-                                [key]: value,
-                              };
-                            },
-                          ),
-                        }
-                      : {
-                          // Like Method
-                          ...(mappedQuery.get(this.PATTERN_LIKE)
-                            ? {
-                                ...convertLikePattern(this.PATTERN_LIKE, mappedQuery)
-                              }
-                            : {}),
-                        }),
-                  }),
-            },
+              ...mappedWhere
+            }
           }
         : {}),
     });

@@ -1,24 +1,8 @@
-type Profile {
-  # Example field (placeholder)
-  exampleField: Int
-}
-
-input CreateProfileInput {
-  # Example field (placeholder)
-  exampleField: Int
-}
-
-input UpdateProfileInput {
-  id: Int!
+type Profiles {
+  _id: ID!
+  first_name: String
 }
 
 type Query {
-  profile: [Profile]!
-  profile(id: Int!): Profile
-}
-
-type Mutation {
-  createProfile(createProfileInput: CreateProfileInput!): Profile!
-  updateProfile(updateProfileInput: UpdateProfileInput!): Profile!
-  removeProfile(id: Int!): Profile
+  getProfiles: [Profiles!]!
 }

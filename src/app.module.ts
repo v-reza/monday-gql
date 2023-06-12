@@ -8,16 +8,18 @@ import sequelizeConfig from './config/sequelize.config';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ApolloDriver, ApolloDriverConfig } from '@nestjs/apollo';
 import { User } from './resource/users/entities/user.entity';
+import { Profile } from './resource/profile/entities/profile.entity';
 
 @Module({
   imports: [
     UsersModule,
+    ProfileModule,
     SequelizeModule.forRoot({
       ...sequelizeConfig,
-      models: [User],
+      models: [User, Profile],
       autoLoadModels: true,
     }),
-    SequelizeModule.forFeature([User]),
+    SequelizeModule.forFeature([User, Profile]),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: true,
