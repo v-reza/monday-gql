@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/sequelize';
 import { Profile } from '../entities/profile.entity';
-import { BaseService } from 'src/base.service';
+import { BaseService } from '../../../base.service';
 
 @Injectable()
 export class ProfileRepository extends BaseService<Profile> {
