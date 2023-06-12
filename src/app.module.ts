@@ -23,7 +23,7 @@ import { Profile } from './resource/profile/entities/profile.entity';
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
       autoSchemaFile: true,
-      typePaths: ['./**/**/*.graphql', './**/*.graphql'],
+      // typePaths: ['./**/**/*.graphql', './**/*.graphql'],
       playground: true,
     }),
   ],
